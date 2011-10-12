@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Test-Bot
-version:            0.05
+version:            0.06
 abstract:           Continuous integration bot for automatically running unit tests and notifying developers of failed tests
 author:
     - Mischa Spiegelmock <revmischa@cpan.org>
