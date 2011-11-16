@@ -18,4 +18,3 @@ sample_tests/all_good/good2.t
 sample_tests/mixed/mixed1.t
 sample_tests/mixed/mixed2.t
 t/test_aggregation.t
-META.yml                                 Module meta-data (added by MakeMaker)

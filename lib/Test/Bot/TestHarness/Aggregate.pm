@@ -10,12 +10,13 @@ has 'aggregate_verbosity' => (
 );
 
 use TAP::Harness;
+use Capture::Tiny qw/tee/;
 
 sub run_tests_for_commit {
     my ($self, $commit) = @_;
 
     my $success = 0;
-    my $output = 'No aggregate test output';
+    my $output = '';
 
     my $desc = "Testing commit " . $commit->id;
     $desc .= ' by ' . $commit->author if $commit->author;
@@ -26,12 +27,16 @@ sub run_tests_for_commit {
 
     # our harness
     my $harness = TAP::Harness->new({
+        errors => 1,
         verbosity => $self->aggregate_verbosity,
     });
-
-    # run tests
-    my $results = $harness->runtests(@{ $self->test_files });
-
+    
+    # run tests, capture stderr
+    my $results;
+    my ($stdout, $stderr) = tee {
+        $results = $harness->runtests(@{ $self->test_files });
+    };    
+    
     # get failed tests
     my @failed_desc  = $results->failed;
     my @exit_desc  = $results->exit;
@@ -43,9 +48,18 @@ sub run_tests_for_commit {
     $success = $results->all_passed ? 1 : 0;
 
     unless ($success) {
-        # list of failed tests
-        $output  = join("\n", map { " - Failed: $_" } @failed_desc);
-        $output .= join("\n", map { " - Exited unexpectedly: $_" } @exit_desc);
+        # list of unique failed tests
+        my %failed;
+        %failed = map { ($_ => 1) } (@failed_desc, @exit_desc);
+        
+        $output  = join("\n", map { " - Failed: $_" } keys %failed);
+        $output .= "\n" if $output;
+    }
+
+    # append stderr capture
+    if ($stderr) {
+        my @errs = split("\n", $stderr);
+        $output .= "Error output:\n  " . join("\n  ", @errs) if @errs;
     }
     
     $commit->test_success($success);
